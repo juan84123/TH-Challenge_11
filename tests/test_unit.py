@@ -24,3 +24,43 @@ def test_broadcast_envia_a_todos_menos_al_emisor():
 
     # Limpiamos después del test
     server.clientes_dict.clear()
+
+def test_broadcast_no_envia_nada_si_solo_hay_un_cliente():
+    # Limpio el diccionario
+    server.clientes_dict.clear()
+
+    # Solo hay un cliente conectado
+    socket_juan = Mock()
+    server.clientes_dict[socket_juan] = "Juan"
+
+    # Juan manda un mensaje
+    server.broadcast(b"hola", socket_juan)
+
+    # No deberia mandarle nada a nadie
+    socket_juan.send.assert_not_called()
+
+    # Limpio
+    server.clientes_dict.clear()
+
+def test_broadcast_limpia_cliente_si_el_envio_falla():
+    # Limpio el diccionario
+    server.clientes_dict.clear()
+
+    socket_juan = Mock()
+    socket_roto = Mock()
+
+    # Hago que el send de socket_roto tire una excepcion
+    # como si ese cliente se hubiera desconectado
+    socket_roto.send.side_effect = OSError("conexion perdida")
+
+    server.clientes_dict[socket_juan] = "Juan"
+    server.clientes_dict[socket_roto] = "Roto"
+
+    # Juan manda un mensaje
+    server.broadcast(b"hola", socket_juan)
+
+    # socket_roto tenia que haberse limpiado del diccionario
+    assert socket_roto not in server.clientes_dict
+
+    # Limpio
+    server.clientes_dict.clear()

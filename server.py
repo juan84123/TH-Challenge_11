@@ -1,39 +1,25 @@
-import socket #permite crear comunicación entre computadoras (cliente-servidor).
-import threading #permite manejar múltiples clientes al mismo tiempo (concurrencia).
+#permite manejar múltiples clientes al mismo tiempo (concurrencia).
+import threading 
+
+#permite crear comunicación entre computadoras (cliente-servidor).
+import socket  
 
 #localhost: Dirección de loopback que permite que la comunicación no salga de mi propia tarjeta de red
 HOST = "127.0.0.1" 
 PORT = 55555
-
-#Definimos la familia de direcciones (IPv4) y el tipo de socket (TCP).
-server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-"""server.setsockopt(...): Significa "Set Socket Option" (Configurar opción del socket). 
-Es para cambiar las reglas de juego de ese socket específico.
-
-socket.SOL_SOCKET: Le dice a Python que la configuración que vamos a cambiar es a nivel de Socket general (no algo específico de un protocolo raro).
-
-socket.SO_REUSEADDR: Esta es la clave. Significa "Socket Option: Reuse Address" (Reutilizar dirección). Le da permiso al servidor para "robarle" el puerto al sistema operativo aunque este crea que todavía está ocupado por una conexión anterior.
-
-1: Es un valor booleano (True). Significa "activar esta opción"."""
-#Permite reutilizar el puerto aunque esté en estado TIME_WAIT.
-#cuando reinicias el servidor rápido.
-server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-#Asocia el socket a una interfaz de red específica (localhost) y un puerto.
-server.bind((HOST,PORT))
-#Pone el socket en modo escucha
-server.listen()
-print(f"Server running on {HOST}:{PORT}")
-
-# Diccionario { socket: nombre }
-# La clave es un objeto de la clase socket
-"""Este objeto es un paquete que contiene:
-Atributos (Datos): El fd (File Descriptor), la IP del cliente, el puerto que está usando, el protocolo (TCP), etc.
-Métodos (Funciones): Las capacidades de ese objeto, como .send(), .recv() o .close()."""
 clientes_dict = {}
+    # Diccionario { socket: nombre }
+    # La clave es un objeto de la clase socket
+"""Este objeto es un paquete que contiene:
+    Atributos (Datos): El fd (File Descriptor), la IP del cliente, el puerto que está usando, 
+    el protocolo (TCP), etc.
+    Métodos (Funciones): Las capacidades de ese objeto, como .send(), .recv() o .close()."""
+
 
 def broadcast(mensaje, cliente_actual):
-    for cliente_socket in clientes_dict:
+    #list(clientes_dict) hace una copia de las claves en ese momento. 
+    #El for recorre esa copia, así aunque el diccionario cambie en el medio, no explota
+    for cliente_socket in list(clientes_dict):
         if cliente_socket != cliente_actual: #para cuando se envie el mensaje, no se envie tambien al cliente que envio el mensaje
             try:
                 cliente_socket.send(mensaje)
@@ -97,5 +83,31 @@ def coneccion_recibida(): #espera la coneccion del clinte y crea el thread
         #Inicia el hilo
         thread.start()
 
-coneccion_recibida()
+# Movemos el arranque del servidor a este bloque para que sea "importable".
+# Cuando Python ejecuta un archivo directamente, __name__ vale "__main__".
+# Cuando otro archivo lo importa (como los tests), __name__ vale "server".
+# Sin este bloque, importar server.py abria un socket real y llamaba a
+# coneccion_recibida() que es un loop infinito, colgando pytest para siempre.
+# Asi, los tests pueden hacer "import server" y acceder a las funciones
+# sin que se ejecute nada de red.
 
+if __name__ == "__main__":
+    #Definimos la familia de direcciones (IPv4) y el tipo de socket (TCP).
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    """server.setsockopt(...): Significa "Set Socket Option" (Configurar opción del socket). 
+    Es para cambiar las reglas de juego de ese socket específico.
+    socket.SOL_SOCKET: Le dice a Python que la configuración que vamos a cambiar es a nivel de 
+    Socket general (no algo específico de un protocolo raro).
+    socket.SO_REUSEADDR: Esta es la clave. Significa "Socket Option: Reuse Address" 
+    (Reutilizar dirección). Le da permiso al servidor para "robarle" el puerto al sistema 
+    operativo aunque este crea que todavía está ocupado por una conexión anterior.
+    1: Es un valor booleano (True). Significa "activar esta opción"."""
+    #Permite reutilizar el puerto aunque esté en estado TIME_WAIT.
+    #cuando reinicias el servidor rápido.
+    server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    #Asocia el socket a una interfaz de red específica (localhost) y un puerto.
+    server.bind((HOST, PORT))
+    #Pone el socket en modo escucha
+    server.listen()
+    print(f"Server running on {HOST}:{PORT}")
+    coneccion_recibida()
