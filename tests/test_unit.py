@@ -64,3 +64,77 @@ def test_broadcast_limpia_cliente_si_el_envio_falla():
 
     # Limpio
     server.clientes_dict.clear()
+
+def test_cliente_desconectado_lo_saca_del_diccionario():
+    server.clientes_dict.clear()
+
+    socket_juan = Mock()
+    server.clientes_dict[socket_juan] = "Juan"
+
+    server.cliente_desconectado(socket_juan)
+
+    assert socket_juan not in server.clientes_dict
+
+    server.clientes_dict.clear()
+
+
+def test_cliente_desconectado_avisa_a_los_demas():
+    server.clientes_dict.clear()
+
+    socket_juan = Mock()
+    socket_majo = Mock()
+    server.clientes_dict[socket_juan] = "Juan"
+    server.clientes_dict[socket_majo] = "Majo"
+
+    server.cliente_desconectado(socket_juan)
+
+    socket_majo.send.assert_called_once_with(
+        "Server: Juan se ha desconectado".encode("utf-8")
+    )
+
+    server.clientes_dict.clear()
+
+
+def test_cliente_desconectado_cierra_el_socket():
+    server.clientes_dict.clear()
+
+    socket_juan = Mock()
+    server.clientes_dict[socket_juan] = "Juan"
+
+    server.cliente_desconectado(socket_juan)
+
+    socket_juan.close.assert_called_once()
+
+    server.clientes_dict.clear()
+
+
+def test_handle_message_reenvia_el_mensaje_recibido():
+    server.clientes_dict.clear()
+
+    socket_juan = Mock()
+    socket_majo = Mock()
+    server.clientes_dict[socket_juan] = "Juan"
+    server.clientes_dict[socket_majo] = "Majo"
+
+    socket_juan.recv.side_effect = [b"Juan: hola", OSError("cortado")]
+
+    server.handle_message(socket_juan)
+
+    socket_majo.send.assert_any_call(b"Juan: hola")
+
+    server.clientes_dict.clear()
+
+
+def test_handle_message_desconecta_si_recv_falla():
+    server.clientes_dict.clear()
+
+    socket_juan = Mock()
+    server.clientes_dict[socket_juan] = "Juan"
+
+    socket_juan.recv.side_effect = OSError("cortado")
+
+    server.handle_message(socket_juan)
+
+    assert socket_juan not in server.clientes_dict
+
+    server.clientes_dict.clear()

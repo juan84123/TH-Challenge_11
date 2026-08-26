@@ -29,7 +29,7 @@ def broadcast(mensaje, cliente_actual):
             
 
 def cliente_desconectado(cliente_socket):
-    if cliente_socket in clientes_dict:
+    if cliente_socket in list(clientes_dict):
         nombre_cliente = clientes_dict[cliente_socket]
 
         # Avisamos a los demás
@@ -45,16 +45,32 @@ def cliente_desconectado(cliente_socket):
         cliente_socket.close()        
         print(f"{nombre_cliente} se ha deconectado")
 
+def mensaje_valido(mensaje):
+    # Si recv() devuelve b"" significa que el cliente cerro la conexion
+    if mensaje == b"":
+        return False
+    # Decodifico y saco espacios, si no queda nada el mensaje no sirve
+    texto = mensaje.decode("utf-8")
+    if texto.strip() == "":
+        return False
+    return True
+
+
 def handle_message(cliente): #espera el mensaje del cliente
     while True:
         try:
-            mensaje = cliente.recv(1024) # bytes del mensaje, tamaño de buffer estandar
+            mensaje = cliente.recv(1024)
+            if mensaje == b"":
+                cliente_desconectado(cliente)
+                break
+            if not mensaje_valido(mensaje):
+                continue
             broadcast(mensaje, cliente)
         except:
             cliente_desconectado(cliente)
             break
 
-def coneccion_recibida(): #espera la coneccion del clinte y crea el thread
+def coneccion_recibida(server): #espera la coneccion del clinte y crea el thread
     while True:
         #Retorna una tupla (cliente_socket (socket del cliente), address(IP y puerto del cliente)), 
         # cliente_socket es un nuevo objeto socket, se genera el Three-way Handshake
@@ -110,4 +126,4 @@ if __name__ == "__main__":
     #Pone el socket en modo escucha
     server.listen()
     print(f"Server running on {HOST}:{PORT}")
-    coneccion_recibida()
+    coneccion_recibida(server)
