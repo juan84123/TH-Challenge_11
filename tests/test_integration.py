@@ -134,6 +134,77 @@ def test_servidor_sigue_funcionando_tras_desconexion():
     mensaje = cliente_pedro.recv(1024)
     assert b"Juan: sigo aca" in mensaje
 
+def test_varios_clientes_enviando_mensajes():
+    server.clientes_dict.clear()
+
+    servidor, puerto = crear_servidor_de_prueba()
+
+    hilo = threading.Thread(target=server.coneccion_recibida, args=(servidor,))
+    hilo.daemon = True
+    hilo.start()
+
+    time.sleep(0.1)
+
+    # Conecto tres clientes
+    cliente_juan = conectar_cliente(puerto, "Juan")
+    cliente_majo = conectar_cliente(puerto, "Majo")
+    cliente_pedro = conectar_cliente(puerto, "Pedro")
+
+    # Descarto avisos de bienvenida
+    time.sleep(0.3)
+    cliente_juan.recv(4096)
+    cliente_majo.recv(4096)
+
+    # Juan y Majo mandan mensajes al mismo tiempo
+    cliente_juan.send(b"Juan: hola")
+    cliente_majo.send(b"Majo: hola")
+
+    time.sleep(0.2)
+
+    # Pedro deberia recibir los dos mensajes
+    mensajes = cliente_pedro.recv(4096)
+    assert b"Juan: hola" in mensajes
+    assert b"Majo: hola" in mensajes
+
+def test_varios_clientes_desconectandose_al_mismo_tiempo():
+    server.clientes_dict.clear()
+
+    servidor, puerto = crear_servidor_de_prueba()
+
+    hilo = threading.Thread(target=server.coneccion_recibida, args=(servidor,))
+    hilo.daemon = True
+    hilo.start()
+
+    time.sleep(0.1)
+
+    # Conecto cuatro clientes
+    cliente_juan = conectar_cliente(puerto, "Juan")
+    cliente_majo = conectar_cliente(puerto, "Majo")
+    cliente_pedro = conectar_cliente(puerto, "Pedro")
+    cliente_observador = conectar_cliente(puerto, "Observador")
+
+    # Descarto avisos de bienvenida
+    time.sleep(0.3)
+    cliente_juan.recv(4096)
+    cliente_majo.recv(4096)
+    cliente_pedro.recv(4096)
+
+    # Juan, Majo y Pedro se desconectan al mismo tiempo
+    cliente_juan.close()
+    cliente_majo.close()
+    cliente_pedro.close()
+
+    time.sleep(0.3)
+
+    # El servidor sigue en pie — el observador puede mandar y recibir
+    cliente_nuevo = conectar_cliente(puerto, "Nuevo")
+    time.sleep(0.1)
+    cliente_observador.recv(4096)   # descarto aviso de bienvenida de Nuevo
+
+    cliente_nuevo.send(b"Nuevo: el servidor sigue vivo")
+    mensaje = cliente_observador.recv(4096)
+    assert b"Nuevo: el servidor sigue vivo" in mensaje
+
     cliente_juan.close()
     cliente_pedro.close()
     servidor.close()

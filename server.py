@@ -24,8 +24,11 @@ def broadcast(mensaje, cliente_actual):
             try:
                 cliente_socket.send(mensaje)
             except:
-                # Si falla, aprovechamos para limpiar
-                cliente_desconectado(cliente_socket)
+                # Limpieza directa sin llamar a cliente_desconectado
+                # para evitar recursion infinita
+                if cliente_socket in clientes_dict:
+                    del clientes_dict[cliente_socket]
+                cliente_socket.close()
             
 
 def cliente_desconectado(cliente_socket):
