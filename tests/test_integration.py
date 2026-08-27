@@ -1,9 +1,7 @@
 import socket
 import threading
 import time
-
 import server
-
 
 def crear_servidor_de_prueba():
     # Creo el socket del servidor igual que en server.py
@@ -15,7 +13,6 @@ def crear_servidor_de_prueba():
     # Pregunto cual puerto eligio
     puerto = servidor.getsockname()[1]
     return servidor, puerto
-
 
 def conectar_cliente(puerto, nombre):
     # Creo un socket de cliente y me conecto al servidor de prueba
@@ -34,7 +31,6 @@ def conectar_cliente(puerto, nombre):
 
     return cliente
 
-
 def test_mensaje_llega_a_los_demas_clientes():
     # Limpio el diccionario
     server.clientes_dict.clear()
@@ -43,7 +39,8 @@ def test_mensaje_llega_a_los_demas_clientes():
     servidor, puerto = crear_servidor_de_prueba()
 
     # Lo lanzo en un hilo de background
-    hilo = threading.Thread(target=server.coneccion_recibida, args=(servidor,))
+    hilo = threading.Thread(target=server.coneccion_recibida, args=(servidor))
+    # si el test termina, este hilo muere solo
     hilo.daemon = True
     hilo.start()
 
