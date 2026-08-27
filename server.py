@@ -7,13 +7,14 @@ import socket
 #localhost: Dirección de loopback que permite que la comunicación no salga de mi propia tarjeta de red
 HOST = "127.0.0.1" 
 PORT = 55555
+#Diccionario { socket: nombre }
+#La clave es un objeto de la clase socket
 clientes_dict = {}
-    # Diccionario { socket: nombre }
-    # La clave es un objeto de la clase socket
-"""Este objeto es un paquete que contiene:
-    Atributos (Datos): El fd (File Descriptor), la IP del cliente, el puerto que está usando, 
-    el protocolo (TCP), etc.
-    Métodos (Funciones): Las capacidades de ese objeto, como .send(), .recv() o .close()."""
+    
+#Este objeto es un paquete que contiene:
+#Atributos (Datos): El fd (File Descriptor), la IP del cliente, el puerto que está usando, 
+#el protocolo (TCP), etc.
+#Métodos (Funciones): Las capacidades de ese objeto, como .send(), .recv() o .close()."""
 
 
 def broadcast(mensaje, cliente_actual):
@@ -32,26 +33,24 @@ def broadcast(mensaje, cliente_actual):
             
 
 def cliente_desconectado(cliente_socket):
-    if cliente_socket in list(clientes_dict):
+    if cliente_socket in clientes_dict:
         nombre_cliente = clientes_dict[cliente_socket]
-
         # Avisamos a los demás
-        """"Usamos UTF-8 porque es el estándar universal de codificación. Nos permite manejar caracteres especiales, 
-            acentos y símbolos de cualquier idioma, asegurando que los bytes que viajan por el socket se traduzcan 
-            correctamente en cualquier computadora, sin importar su configuración regional."""""
+        #Usamos UTF-8 porque es el estándar universal de codificación. Nos permite manejar caracteres especiales, 
+        #acentos y símbolos de cualquier idioma, asegurando que los bytes que viajan por el socket se traduzcan 
+        #correctamente en cualquier computadora, sin importar su configuración regional.
         mensaje_desconexion = f"Server: {nombre_cliente} se ha desconectado".encode('utf-8')
         broadcast(mensaje_desconexion, cliente_socket)
-
-        # Se borra el usuario del diccionario
-        del clientes_dict[cliente_socket]
+        # Verificamos de nuevo antes de borrar porque otro hilo
+        # pudo haberlo borrado entre el if de arriba y esta linea
+        if cliente_socket in clientes_dict:
+            # Se borra el usuario del diccionario
+            del clientes_dict[cliente_socket]
         # Cierra la conexión
         cliente_socket.close()        
         print(f"{nombre_cliente} se ha deconectado")
 
 def mensaje_valido(mensaje):
-    # Si recv() devuelve b"" significa que el cliente cerro la conexion
-    if mensaje == b"":
-        return False
     # Decodifico y saco espacios, si no queda nada el mensaje no sirve
     texto = mensaje.decode("utf-8")
     if texto.strip() == "":
@@ -76,8 +75,10 @@ def handle_message(cliente): #espera el mensaje del cliente
 def coneccion_recibida(server): #espera la coneccion del clinte y crea el thread
     while True:
         #Retorna una tupla (cliente_socket (socket del cliente), address(IP y puerto del cliente)), 
-        # cliente_socket es un nuevo objeto socket, se genera el Three-way Handshake
-        cliente_socket, addres = server.accept()
+        #cliente_socket es un nuevo objeto socket, se genera el Three-way Handshake
+        # Recibe el servidor como parametro en vez de usar la variable global
+        # para que los tests puedan pasarle su propio servidor de prueba
+        cliente_socket, address = server.accept()
 
         # Protocolo de nombre
         cliente_socket.send("nombre".encode("utf-8"))
@@ -86,12 +87,12 @@ def coneccion_recibida(server): #espera la coneccion del clinte y crea el thread
         # Se guarda en el diccionario
         clientes_dict[cliente_socket] = nombre_cliente
 
-        print(f"{nombre_cliente} se ha conectado...{addres}")
+        print(f"{nombre_cliente} se ha conectado...{address}")
 
         mensaje = f"Server: {nombre_cliente} se ha unido al chat!".encode("utf-8")
         broadcast(mensaje, cliente_socket)
 
-        cliente_socket.send("Te conectaste al servidor". encode("utf-8"))
+        cliente_socket.send("Te conectaste al servidor".encode("utf-8"))
 
         #Crea el hilo, hilo de ejecución independiente para cada cliente, 
         # target dice cual es la funcion que se va a crear por cada usuario y 
@@ -113,14 +114,14 @@ def coneccion_recibida(server): #espera la coneccion del clinte y crea el thread
 if __name__ == "__main__":
     #Definimos la familia de direcciones (IPv4) y el tipo de socket (TCP).
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    """server.setsockopt(...): Significa "Set Socket Option" (Configurar opción del socket). 
-    Es para cambiar las reglas de juego de ese socket específico.
-    socket.SOL_SOCKET: Le dice a Python que la configuración que vamos a cambiar es a nivel de 
-    Socket general (no algo específico de un protocolo raro).
-    socket.SO_REUSEADDR: Esta es la clave. Significa "Socket Option: Reuse Address" 
-    (Reutilizar dirección). Le da permiso al servidor para "robarle" el puerto al sistema 
-    operativo aunque este crea que todavía está ocupado por una conexión anterior.
-    1: Es un valor booleano (True). Significa "activar esta opción"."""
+    #server.setsockopt(...): Significa "Set Socket Option" (Configurar opción del socket). 
+    #Es para cambiar las reglas de juego de ese socket específico.
+    #socket.SOL_SOCKET: Le dice a Python que la configuración que vamos a cambiar es a nivel de 
+    #Socket general (no algo específico de un protocolo raro).
+    #socket.SO_REUSEADDR: Esta es la clave. Significa "Socket Option: Reuse Address" 
+    #(Reutilizar dirección). Le da permiso al servidor para "robarle" el puerto al sistema 
+    #operativo aunque este crea que todavía está ocupado por una conexión anterior.
+    #1: Es un valor booleano (True). Significa "activar esta opción".
     #Permite reutilizar el puerto aunque esté en estado TIME_WAIT.
     #cuando reinicias el servidor rápido.
     server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
