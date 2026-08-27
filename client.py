@@ -7,7 +7,7 @@ PORT = 55555
 
 def conectar_al_servidor():
     #Intenta conectar hasta que el servidor aparezca.
-    # Bucle infinito hasta que se logre la conexión.
+    #Bucle infinito hasta que se logre la conexión.
     while True:
         try:
             # Crea un objeto socket nuevo (IPv4, TCP) en cada intento.
@@ -18,6 +18,7 @@ def conectar_al_servidor():
             # Retorna el socket listo y sale de la función.
             return nuevo_socket
         except:
+            nuevo_socket.close()
             # Si falla (server apagado), avisa y espera antes de reintentar.
             print("Servidor no encontrado. Reintentando en 3 segundos...")
             time.sleep(3)
@@ -57,8 +58,8 @@ while True:
     client = conectar_al_servidor()
     
     # Crea el hilo de escucha pasándole el socket actual y el nombre.
-    """Hilo Principal: Maneja lo que VOS hacés (teclado).Está atrapado en el input()
-        Hilo Secundario: Maneja lo que los DEMÁS hacen (red). Está atrapado en el recv()"""
+    #Hilo Principal: Maneja lo que VOS hacés (teclado).Está atrapado en el input()
+    #Hilo Secundario: Maneja lo que los DEMÁS hacen (red). Está atrapado en el recv()
     thread_escucha = threading.Thread(target=mensaje_recibido, args=(client, nombre_usuario))
     # El hilo morirá automáticamente si el programa principal se cierra.
     thread_escucha.daemon = True
@@ -70,7 +71,6 @@ while True:
         try:
             # Se queda bloqueado esperando que el usuario escriba algo.
             texto = input("") 
-
             # Si el servidor cayó, el hilo de escucha ya cerró el socket.
             # Al intentar enviar, esto dará error y saldrá al bucle de reconexión.
             mensaje_a_enviar = f"{nombre_usuario}: {texto}"
