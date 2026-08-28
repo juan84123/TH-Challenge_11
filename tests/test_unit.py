@@ -20,6 +20,7 @@ def test_broadcast_envia_a_todos_menos_al_emisor():
     socket_majo.send.assert_called_once_with(b"hola")
 
     # Verificamos que Juan NO se lo mandó a sí mismo
+    #AssertionError si es llamado, metodo de Mock()
     socket_juan.send.assert_not_called()
 
     # Limpiamos después del test

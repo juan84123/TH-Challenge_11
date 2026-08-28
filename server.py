@@ -74,34 +74,39 @@ def handle_message(cliente): #espera el mensaje del cliente
 
 def coneccion_recibida(server): #espera la coneccion del clinte y crea el thread
     while True:
-        #Retorna una tupla (cliente_socket (socket del cliente), address(IP y puerto del cliente)), 
-        #cliente_socket es un nuevo objeto socket, se genera el Three-way Handshake
-        # Recibe el servidor como parametro en vez de usar la variable global
-        # para que los tests puedan pasarle su propio servidor de prueba
-        cliente_socket, address = server.accept()
+        try:
+            #Retorna una tupla (cliente_socket (socket del cliente), address(IP y puerto del cliente)), 
+            #cliente_socket es un nuevo objeto socket, se genera el Three-way Handshake
+            # Recibe el servidor como parametro en vez de usar la variable global
+            # para que los tests puedan pasarle su propio servidor de prueba
+            cliente_socket, address = server.accept()
 
-        # Protocolo de nombre
-        cliente_socket.send("nombre".encode("utf-8"))
-        nombre_cliente = cliente_socket.recv(1024).decode("utf-8")
+            # Protocolo de nombre
+            cliente_socket.send("nombre".encode("utf-8"))
+            nombre_cliente = cliente_socket.recv(1024).decode("utf-8")
 
-        # Se guarda en el diccionario
-        clientes_dict[cliente_socket] = nombre_cliente
+            # Se guarda en el diccionario
+            clientes_dict[cliente_socket] = nombre_cliente
 
-        print(f"{nombre_cliente} se ha conectado...{address}")
+            print(f"{nombre_cliente} se ha conectado...{address}")
 
-        mensaje = f"Server: {nombre_cliente} se ha unido al chat!".encode("utf-8")
-        broadcast(mensaje, cliente_socket)
+            mensaje = f"Server: {nombre_cliente} se ha unido al chat!".encode("utf-8")
+            broadcast(mensaje, cliente_socket)
 
-        cliente_socket.send("Te conectaste al servidor".encode("utf-8"))
+            cliente_socket.send("Te conectaste al servidor".encode("utf-8"))
 
-        #Crea el hilo, hilo de ejecución independiente para cada cliente, 
-        # target dice cual es la funcion que se va a crear por cada usuario y 
-        # args es argumentos que necesita la funcion
-        thread = threading.Thread(target=handle_message, args=(cliente_socket,)) 
-        # Si el servidor se apaga, los hilos de clientes mueren
-        thread.daemon = True
-        #Inicia el hilo
-        thread.start()
+            #Crea el hilo, hilo de ejecución independiente para cada cliente, 
+            # target dice cual es la funcion que se va a crear por cada usuario y 
+            # args es argumentos que necesita la funcion
+            thread = threading.Thread(target=handle_message, args=(cliente_socket,)) 
+            # Si el servidor se apaga, los hilos de clientes mueren
+            thread.daemon = True
+            #Inicia el hilo
+            thread.start()
+        #OSError es la clase base de todos los errores de red y sockets en Python
+        except OSError:
+            # El servidor fue cerrado, terminamos el loop limpiamente
+            break
 
 # Movemos el arranque del servidor a este bloque para que sea "importable".
 # Cuando Python ejecuta un archivo directamente, __name__ vale "__main__".
