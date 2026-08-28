@@ -15,3 +15,6 @@ def test_mensaje_valido_acepta_texto_normal():
 def test_mensaje_valido_acepta_texto_con_espacios_alrededor():
     # Espacios de mas alrededor de un mensaje real no lo invalidan
     assert server.mensaje_valido(b"  hola  ") is True
+
+def test_mensaje_valido_acepta_caracteres_especiales():
+    assert server.mensaje_valido("ñoño: hola".encode("utf-8")) is True

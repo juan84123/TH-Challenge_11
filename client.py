@@ -73,6 +73,12 @@ while True:
             # Al intentar enviar, esto dará error y saldrá al bucle de reconexión.
             mensaje_a_enviar = f"{nombre_usuario}: {texto}"
             client.send(mensaje_a_enviar.encode("utf-8"))
+        except KeyboardInterrupt:
+        # Ctrl+C — salir del programa completamente
+            print("\nSaliendo...")
+            client.close()
+            exit()
+        
         except:
             # Si el envío falla, sale de este bucle interno para volver a 'conectar_al_servidor'.
             print("Reiniciando sistema de conexión...")
