@@ -164,6 +164,7 @@ def test_varios_clientes_enviando_mensajes():
     assert b"Juan: hola" in mensajes
     assert b"Majo: hola" in mensajes
 
+# problema en broadcast RecursionError
 def test_varios_clientes_desconectandose_al_mismo_tiempo():
     server.clientes_dict.clear()
 

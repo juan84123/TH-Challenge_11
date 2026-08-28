@@ -44,6 +44,7 @@ def test_broadcast_no_envia_nada_si_solo_hay_un_cliente():
     # Limpio
     server.clientes_dict.clear()
 
+# Error de en brodcast por intentar borrar cosas del dicciones mientras se recorria
 def test_broadcast_limpia_cliente_si_el_envio_falla():
     # Limpio el diccionario
     server.clientes_dict.clear()
