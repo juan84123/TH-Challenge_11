@@ -35,12 +35,9 @@ def mensaje_recibido(client_socket, nombre):
             # Traduce los bytes recibidos a texto.
             mensaje = data.decode("utf-8")
             if mensaje == "nombre":
-                # Responde al protocolo inicial del servidor enviando el nombre.
                 client_socket.send(nombre.encode("utf-8"))
             else:
-                # \r mueve el cursor al inicio para no ensuciar el input del usuario.
                 print(f"\r{mensaje}")
-                # Redibuja el indicador "> " para que el usuario sepa que puede seguir escribiendo.
                 print("> ", end="", flush=True)
         except:
             break
@@ -78,7 +75,6 @@ while True:
             print("\nSaliendo...")
             client.close()
             exit()
-        
         except:
             # Si el envío falla, sale de este bucle interno para volver a 'conectar_al_servidor'.
             print("Reiniciando sistema de conexión...")
