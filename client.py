@@ -56,8 +56,7 @@ nombre_usuario = input("Cual es tu nombre: ")
 while True:
     # Llama a la función que se queda intentando conectar.
     client = conectar_al_servidor()
-    
-    # Crea el hilo de escucha pasándole el socket actual y el nombre.
+    #Crea el hilo de escucha pasándole el socket actual y el nombre.
     #Hilo Principal: Maneja lo que VOS hacés (teclado).Está atrapado en el input()
     #Hilo Secundario: Maneja lo que los DEMÁS hacen (red). Está atrapado en el recv()
     thread_escucha = threading.Thread(target=mensaje_recibido, args=(client, nombre_usuario))
@@ -65,7 +64,6 @@ while True:
     thread_escucha.daemon = True
     # Inicia el hilo de escucha en segundo plano.
     thread_escucha.start()
-
     # Bucle de escritura (Hilo Principal).
     while True:
         try:

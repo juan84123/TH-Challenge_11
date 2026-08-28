@@ -110,7 +110,6 @@ def coneccion_recibida(server): #espera la coneccion del clinte y crea el thread
 # coneccion_recibida() que es un loop infinito, colgando pytest para siempre.
 # Asi, los tests pueden hacer "import server" y acceder a las funciones
 # sin que se ejecute nada de red.
-
 if __name__ == "__main__":
     #Definimos la familia de direcciones (IPv4) y el tipo de socket (TCP).
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
