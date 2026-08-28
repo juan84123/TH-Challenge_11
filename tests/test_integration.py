@@ -88,7 +88,7 @@ def test_emisor_no_recibe_su_propio_mensaje():
     # settimeout(3) hace que si no llega nada en 3 segundos tire excepcion
     try:
         cliente_juan.recv(1024)
-        # Si llega algo, el test falla
+        # Si llega algo, el test falla directo y tira el mensaje
         assert False, "Juan recibio su propio mensaje"
     except TimeoutError:
         # Si hay timeout, es correcto — Juan no recibio nada
@@ -113,6 +113,7 @@ def test_servidor_sigue_funcionando_tras_desconexion():
     # Le doy tiempo al servidor para que envíe todos los avisos
     time.sleep(0.3)
 
+    # Se usa 4096 para recibir todos los mensajes posibles al mismo tiempo
     # Descarto todos los avisos pendientes de Juan en un solo recv
     cliente_juan.recv(4096)
     # Descarto el aviso de Pedro para Majo

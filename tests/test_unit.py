@@ -19,12 +19,13 @@ def test_broadcast_envia_a_todos_menos_al_emisor():
     # Verificamos que Majo lo recibió
     socket_majo.send.assert_called_once_with(b"hola")
 
-    # Verificamos que Juan NO se lo mandó a sí mismo
-    #AssertionError si es llamado, metodo de Mock()
+    # Se corrobora que no se le llame al socket
+    # AssertionError si es llamado, metodo de Mock()
     socket_juan.send.assert_not_called()
 
     # Limpiamos después del test
     server.clientes_dict.clear()
+
 
 def test_broadcast_no_envia_nada_si_solo_hay_un_cliente():
     # Limpio el diccionario
@@ -37,7 +38,7 @@ def test_broadcast_no_envia_nada_si_solo_hay_un_cliente():
     # Juan manda un mensaje
     server.broadcast(b"hola", socket_juan)
 
-    # No deberia mandarle nada a nadie
+    # Se corrobora que no se le llame al socket
     socket_juan.send.assert_not_called()
 
     # Limpio
@@ -52,6 +53,10 @@ def test_broadcast_limpia_cliente_si_el_envio_falla():
 
     # Hago que el send de socket_roto tire una excepcion
     # como si ese cliente se hubiera desconectado
+    # Es la forma de simular que el cliente se cayó
+    # cuando un cliente se desconecta y el servidor intenta mandarle algo, 
+    # el sistema operativo tira un OSError
+    # simular que el socket envio esto
     socket_roto.send.side_effect = OSError("conexion perdida")
 
     server.clientes_dict[socket_juan] = "Juan"
@@ -60,7 +65,7 @@ def test_broadcast_limpia_cliente_si_el_envio_falla():
     # Juan manda un mensaje
     server.broadcast(b"hola", socket_juan)
 
-    # socket_roto tenia que haberse limpiado del diccionario
+    # Corroboramos que el socket fue eliminado
     assert socket_roto not in server.clientes_dict
 
     # Limpio
@@ -74,6 +79,7 @@ def test_cliente_desconectado_lo_saca_del_diccionario():
 
     server.cliente_desconectado(socket_juan)
 
+    # Corroboramos que el socket fue eliminado
     assert socket_juan not in server.clientes_dict
 
     server.clientes_dict.clear()
@@ -89,6 +95,7 @@ def test_cliente_desconectado_avisa_a_los_demas():
 
     server.cliente_desconectado(socket_juan)
 
+    # Corrobora si el socket fue llamado 1 vez con un mensaje en especifico
     socket_majo.send.assert_called_once_with(
         "Server: Juan se ha desconectado".encode("utf-8")
     )
@@ -104,6 +111,7 @@ def test_cliente_desconectado_cierra_el_socket():
 
     server.cliente_desconectado(socket_juan)
 
+    # Se corrobora si fue llamado 1 vez
     socket_juan.close.assert_called_once()
 
     server.clientes_dict.clear()
@@ -117,10 +125,14 @@ def test_handle_message_reenvia_el_mensaje_recibido():
     server.clientes_dict[socket_juan] = "Juan"
     server.clientes_dict[socket_majo] = "Majo"
 
+    # Sin el OSError al final el loop nunca terminaría 
+    # recv() seguiría devolviendo valores indefinidamente y el test se colgaría
+    # es recv porque es lo que escucha que juan escriba algo
     socket_juan.recv.side_effect = [b"Juan: hola", OSError("cortado")]
 
     server.handle_message(socket_juan)
 
+    # si alguna vez se llamo a ese socket con un mensaje en especifico
     socket_majo.send.assert_any_call(b"Juan: hola")
 
     server.clientes_dict.clear()
@@ -132,10 +144,12 @@ def test_handle_message_desconecta_si_recv_falla():
     socket_juan = Mock()
     server.clientes_dict[socket_juan] = "Juan"
 
+    # recv() falla desde el primer intento — simula que el cliente se cayo antes de mandar nada
     socket_juan.recv.side_effect = OSError("cortado")
 
     server.handle_message(socket_juan)
 
+    # Corroboramos que el socket fue eliminado
     assert socket_juan not in server.clientes_dict
 
     server.clientes_dict.clear()
