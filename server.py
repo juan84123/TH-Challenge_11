@@ -18,15 +18,24 @@ clientes_dict = {}
 
 
 def broadcast(mensaje, cliente_actual):
-    #list(clientes_dict) hace una copia de las claves en ese momento. 
-    #El for recorre esa copia, así aunque el diccionario cambie en el medio, no explota
+    # BUG ENCONTRADO: el codigo original usaba "for cliente_socket in clientes_dict"
+    # directamente. Cuando send() fallaba, cliente_desconectado() borraba una entrada
+    # del diccionario en el medio del recorrido y Python tiraba:
+    # RuntimeError: dictionary changed size during iteration
+    # SOLUCION: list(clientes_dict) hace una copia de las claves antes de arrancar
+    # el loop. Asi aunque el diccionario cambie en el medio, el recorrido no explota.
     for cliente_socket in list(clientes_dict):
         if cliente_socket != cliente_actual: #para cuando se envie el mensaje, no se envie tambien al cliente que envio el mensaje
             try:
                 cliente_socket.send(mensaje)
             except:
-                # Limpieza directa sin llamar a cliente_desconectado
-                # para evitar recursion infinita
+                # BUG ENCONTRADO: el codigo original llamaba a cliente_desconectado()
+                # cuando un send() fallaba. Eso causaba recursion infinita:
+                # broadcast -> cliente_desconectado -> broadcast -> ...
+                # Con varios clientes cayendo al mismo tiempo, Python explotaba con
+                # RecursionError y el servidor se caia entero.
+                # SOLUCION: hacer la limpieza directamente sin llamar a
+                # cliente_desconectado(), cortando la recursion.
                 if cliente_socket in clientes_dict:
                     del clientes_dict[cliente_socket]
                 cliente_socket.close()
@@ -61,6 +70,11 @@ def mensaje_valido(mensaje):
 def handle_message(cliente): #espera el mensaje del cliente
     while True:
         try:
+            # BUG ENCONTRADO: el codigo original no chequeaba b"". Cuando un cliente
+            # hacia Ctrl+C, recv() devolvia b"" sin tirar excepcion. El servidor lo
+            # pasaba a broadcast() y quedaba en un loop infinito reenviando mensajes
+            # vacios a todos los clientes conectados.
+            # SOLUCION: detectar b"" explicitamente y tratarlo como una desconexion.
             mensaje = cliente.recv(1024)
             if mensaje == b"":
                 cliente_desconectado(cliente)
